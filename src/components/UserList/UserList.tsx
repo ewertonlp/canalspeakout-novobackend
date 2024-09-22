@@ -68,45 +68,51 @@ export const UserList = ({ postId, selectedUsers, setSelectedUsers }: UserListPr
 
     const fetchUsers = async () => {
         setLoading(true)
-        const response = await relatoController.BuscarPorId(postId)
+        const response = await new RelatoUsuarioController().ListarPorRelato(postId);
 
-        if (response && response.UsuarioTemp) {
-            const users: RelatoUsuario[] = response.UsuarioTemp.map(user => ({
+        console.log('relatoBuscado');
+
+        console.log(response);
+
+        if (response && response.length > 0) {
+            const users: RelatoUsuario[] = response.map(user => ({
                 IdRelato: postId,
                 IdUsuario: user.IdUsuario ? Number(user.IdUsuario) : 0,
                 Usuario: user.Usuario,
-                // cpf: '',
                 Email: user.Email,
-                // password: '',
-                // tenant: '',
-                // blocked: false,
-                // username: '',
-                // role: '',
-                // areas: [],
             }))
+            console.log('usuariosTemp');
+            console.log(users);
             setSelectedUsers(users)
         }
         setLoading(false)
     }
 
-    const handleUserSelect = async user => {
-        let updatedUsers
-        if (selectedUsers.find(selectedUser => selectedUser.IdUsuario === user.id)) {
-            updatedUsers = selectedUsers.filter(selectedUser => selectedUser.IdUsuario !== user.id)
-        } else {
-            updatedUsers = [...selectedUsers, user]
-        }
+    const salvarUsuario = async usuario => {
 
-        setSelectedUsers(updatedUsers)
-
-        const relatoUsuarioSalvar = {
+        const u = {
             IdRelato: postId,
-            IdUsuario: user.IdUsuario,
-            Usuario: user.Usuario,
-            Email: user.Email,
+            IdUsuario: Number(usuario.Id),
+            Usuario: usuario.Nome,
+            Email: usuario.Email
         };
 
-        await relatoUsuarioController.Salvar(relatoUsuarioSalvar)
+        await new RelatoUsuarioController().Salvar(u);
+    }
+
+    const handleUserSelect = async user => {
+        let updatedUsers;
+
+        if (selectedUsers.find(selectedUser => selectedUser.IdUsuario === Number(user.Id))) {
+            updatedUsers = selectedUsers.filter(selectedUser => selectedUser.IdUsuario !== Number(user.Id));
+        } 
+        else {
+            updatedUsers = [...selectedUsers, user];
+        }
+
+        setSelectedUsers(updatedUsers);
+
+        await salvarUsuario(user);
     }
 
     const handleDeleteConfirmation = id => {
@@ -117,28 +123,14 @@ export const UserList = ({ postId, selectedUsers, setSelectedUsers }: UserListPr
     const handleDelete = async () => {
         const newSelectedUsers = selectedUsers.filter(user => user.IdUsuario !== Number(deleteUserId))
         setSelectedUsers(newSelectedUsers)
-        await relatoController.Salvar(postId)
+        // await relatoController.Salvar(postId)
         setDeleteModalOpen(false)
     }
 
-    // const handleSendEmail = async selectedUser => {
-    //     try {
-    //         setLoading(true)
-    //         const response = await postController.sendEmail(selectedUser.email)
-    //         enqueueSnackbar('O convite foi enviado por email ao usuário selecionado.', { variant: 'success' })
-    //     } catch (error) {
-    //         enqueueSnackbar('Erro ao enviar email', { variant: 'error' })
-    //         console.error('Erro ao enviar email', error)
-    //     } finally {
-    //         setLoading(false)
-    //     }
-    // }
-
+   
     useEffect(() => {
         fetchUsers()
     }, [postId])
-
-    console.log("SelectedUsers: ", selectedUsers);
 
     return (
         <>

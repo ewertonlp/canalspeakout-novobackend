@@ -1,7 +1,7 @@
 import { Alert, AlertColor, Dialog, DialogContent, DialogTitle, Grid, InputLabel, Snackbar, TextField } from '@mui/material';
 import { RelatoAcaoController } from 'controllers/RelatoAcaoController';
 import { useRouter } from 'next/router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import ApolloForm, { ApolloFormSchemaComponentType, ApolloFormSchemaItem, } from 'src/components/apollo-form/ApolloForm.component';
 import { RelatoAcao } from 'types/RelatoAcao';
 import { RelatoUsuario } from 'types/RelatoUsuario';
@@ -21,9 +21,12 @@ export function NewActionModal({open,setOpen,usuarios}: {
 
     const [initialValue, setInitialValue] = useState([]);
 
-    const userOptions: { label: string; value: string; email: string }[] = [];
+    // const userOptions: { label: string; value: string; email: string }[] = [];
+    const [userOptions, setUserOptions] = useState<{ label: string; value: string; email: string }[]>([]);
 
     usuarios.map(u => userOptions.push({ value: String(u.IdUsuario), label: u.Usuario, email: u.Email }));
+
+    console.log(usuarios);
 
     const [openSnackbar, setOpenSnackbar] = useState<boolean>(false);
 
@@ -43,6 +46,7 @@ export function NewActionModal({open,setOpen,usuarios}: {
 
     const [loading, setLoading] = useState(false);
 
+
     async function salvar(data: any) {
 
         setLoading(true);
@@ -52,6 +56,7 @@ export function NewActionModal({open,setOpen,usuarios}: {
             let ra = new RelatoAcao();
 
             ra.IdRelato = Number(query.id);
+            console.log('Dados enviados para a API:', data);
 
             ra = await new RelatoAcaoController().Salvar(data,fileFieldValue as File[]);
 
@@ -60,10 +65,23 @@ export function NewActionModal({open,setOpen,usuarios}: {
 
         catch (error) {
             showSnackbarMessage('error', 'Falha ao fazer upload de mídia')
+            console.log(error)
         }
 
         setLoading(false);
     }
+
+    useEffect(() => {
+        if (usuarios && usuarios.length > 0) {
+            const options = usuarios.map(u => ({
+                value: String(u.IdUsuario),
+                label: u.Usuario,
+                email: u.Email,
+            }));
+            setUserOptions(options);  
+        }
+    }, [usuarios]); 
+    
 
     const formSchema: ApolloFormSchemaItem[] = [
         {

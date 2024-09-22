@@ -1,81 +1,83 @@
-import AddIcon from '@mui/icons-material/Add';
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Grid, Typography } from '@mui/material';
-import { RelatoAcaoController } from 'controllers/RelatoAcaoController';
-import { RelatoArquivoController } from 'controllers/RelatoArquivoController';
-import { UsuarioController } from 'controllers/UsuarioController';
-import { useRouter } from 'next/router';
-import { useSnackbar } from 'notistack';
-import { useEffect, useState } from 'react';
-import { RelatoUsuarioService } from 'services/RelatoUsuarioService';
-import { Relato } from 'types/Relato';
-import { RelatoAcao } from 'types/RelatoAcao';
-import { RelatoArquivo } from 'types/RelatoArquivo';
-import { RelatoUsuario } from 'types/RelatoUsuario';
-import { NewActionModal } from '../NewActionModal';
-import ActionCard from '../ouvidoria/ActionCard';
+import AddIcon from '@mui/icons-material/Add'
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Grid, Typography } from '@mui/material'
+import { RelatoAcaoController } from 'controllers/RelatoAcaoController'
+import { RelatoArquivoController } from 'controllers/RelatoArquivoController'
+import { UsuarioController } from 'controllers/UsuarioController'
+import { useRouter } from 'next/router'
+import { useSnackbar } from 'notistack'
+import { useEffect, useState } from 'react'
+import { RelatoUsuarioController } from 'controllers/RelatoUsuarioController'
+import { Relato } from 'types/Relato'
+import { RelatoAcao } from 'types/RelatoAcao'
+import { RelatoArquivo } from 'types/RelatoArquivo'
+import { RelatoUsuario } from 'types/RelatoUsuario'
+import { NewActionModal } from '../NewActionModal'
+import ActionCard from '../ouvidoria/ActionCard'
 
-function ActionsPage({ relato}: { relato: Relato; getRelato: (id: string) => void }) {
+function ActionsPage({ relato }: { relato: Relato; getRelato: (id: string) => void }) {
+    const [openModal, setOpenModal] = useState<boolean>(false)
+    const { enqueueSnackbar } = useSnackbar()
+    const [loading, setLoading] = useState(false)
+    const [deleteAction, setDeleteAction] = useState<string>('')
+    const [acoes, setAcoes] = useState<RelatoAcao[]>([])
+    const [arquivos, setArquivos] = useState<RelatoArquivo[]>([])
+    const [usuarios, setUsuarios] = useState<RelatoUsuario[]>([])
+    const [isDeleteModalOpen, setDeleteModalOpen] = useState<boolean>(false)
 
-    const [openModal, setOpenModal] = useState<boolean>(false);
-    const { enqueueSnackbar } = useSnackbar();
-    const [loading, setLoading] = useState(false);
-    const [deleteAction, setDeleteAction] = useState<string>('');
-    const [acoes, setAcoes] = useState<RelatoAcao[]>([]);
-    const [arquivos,setArquivos] = useState<RelatoArquivo[]>([]);
-    const [usuarios,setUsuarios] = useState<RelatoUsuario[]>([]);
-    const [isDeleteModalOpen, setDeleteModalOpen] = useState<boolean>(false);
-
-    const { push, query } = useRouter();
+    const { push, query } = useRouter()
 
     const buscarAcoes = async () => {
-
         try {
-            
-            const a = await new RelatoAcaoController().ListarPorRelato(relato.Id);
+            const a = await new RelatoAcaoController().ListarPorRelato(relato.Id)
+            setAcoes(a)
 
-            setAcoes(a);
+            if (a && a.length > 0) {
+                const arqs = await new RelatoArquivoController().ListarPorRelato(relato.Id)
+                setArquivos(arqs)
 
-            if(a && a.length > 0){
-
-                let arqs = await new RelatoArquivoController().ListarPorRelato(relato.Id);
-                setArquivos(arqs);
-
-                let u = await new RelatoUsuarioService().ListarPorRelato(relato.Id);
-                setUsuarios(u);
+                // const u = await new RelatoUsuarioController().ListarPorRelato(relato.Id)
+                // setUsuarios(u)
             }
-        } 
-        catch (error) {
-            enqueueSnackbar(`Erro ao buscar ações: ${error.error}`,{variant:'error'});
-            console.error(error);
+        } catch (error) {
+            enqueueSnackbar(`Erro ao buscar ações: ${error.error}`, { variant: 'error' })
+            console.error(error)
         }
     }
+
+    const buscarUsuarios = async () => {
+        try {
+            const u = await new RelatoUsuarioController().ListarPorRelato(relato.Id);
+            setUsuarios(u);
+        } catch (error) {
+            enqueueSnackbar(`Erro ao buscar usuários: ${error.message}`, { variant: 'error' });
+        }
+    };
 
     const excluirAcao = async (id: number) => {
         if (deleteAction) {
             try {
-                await new RelatoAcaoController().Excluir(relato.Id);
-                enqueueSnackbar('Ação excluída com sucesso', { variant: 'success' });
-                await buscarAcoes();
-            } 
-            
-            catch (error) {
-                console.error('Erro ao excluir a ação:', error);
-                enqueueSnackbar('Erro ao excluir a Ação', { variant: 'error' });
-            } 
-            
-            finally {
-                setDeleteModalOpen(false);
-                setDeleteAction('');
+                await new RelatoAcaoController().Excluir(relato.Id)
+                enqueueSnackbar('Ação excluída com sucesso', { variant: 'success' })
+                await buscarAcoes()
+            } catch (error) {
+                console.error('Erro ao excluir a ação:', error)
+                enqueueSnackbar('Erro ao excluir a Ação', { variant: 'error' })
+            } finally {
+                setDeleteModalOpen(false)
+                setDeleteAction('')
             }
         }
-    };
-
-    const confirmarExclusao = (id: string) => {
-        setDeleteAction(id);
-        setDeleteModalOpen(true);
     }
 
-    useEffect(() =>{buscarAcoes()}, [acoes]);
+    const confirmarExclusao = (id: string) => {
+        setDeleteAction(id)
+        setDeleteModalOpen(true)
+    }
+
+    useEffect(() => {
+        buscarAcoes()
+        buscarUsuarios()
+    }, [acoes, relato.Id])
 
     return (
         <Grid
@@ -101,7 +103,6 @@ function ActionsPage({ relato}: { relato: Relato; getRelato: (id: string) => voi
                         <AddIcon /> Cadastrar Nova ação
                     </Button>
                 )}
-
             </Grid>
             {(acoes.length > 0 &&
                 acoes.map((a, index) => (
